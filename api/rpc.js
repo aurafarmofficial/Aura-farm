@@ -11,8 +11,8 @@ const ENDPOINTS = [
 const DEFAULT_TIMEOUT = 30000;
 const MINT_DEFAULT = "8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump";
 const DAY = 86400;
-const HISTORY_PAGE_LIMIT = 1000;
-const MAX_HISTORY_PAGES = 10;
+const HISTORY_PAGE_LIMIT = 100;
+const MAX_HISTORY_PAGES = 20;
 
 async function rpcCall(endpoint,payload){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),DEFAULT_TIMEOUT);
