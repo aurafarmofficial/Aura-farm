@@ -5,15 +5,11 @@ const ENDPOINTS = [
   "https://endpoints.omniatech.io/v1/sol/mainnet/public"
 ];
 
-const MAX_TIMEOUT = 15000;
+const TIMEOUT = 15000;
 
-function rpcPayload(method, params, id = 1) {
-  return { jsonrpc: "2.0", id, method, params };
-}
-
-async function callRpc(endpoint, payload) {
+async function call(endpoint, payload) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), MAX_TIMEOUT);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT);
 
   try {
     const response = await fetch(endpoint, {
@@ -30,15 +26,17 @@ async function callRpc(endpoint, payload) {
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error(`Invalid RPC response (HTTP ${response.status})`);
+      throw new Error(`Invalid JSON from RPC (HTTP ${response.status})`);
     }
 
     if (!response.ok) {
-      throw new Error(`RPC HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${data?.error?.message || text.slice(0,200)}`);
     }
 
     if (data?.error) {
-      throw new Error(data.error.message || "RPC error");
+      throw new Error(
+        `${data.error.code ?? "RPC"}: ${data.error.message || "RPC error"}`
+      );
     }
 
     return data;
@@ -47,149 +45,142 @@ async function callRpc(endpoint, payload) {
   }
 }
 
-async function callWithFallback(method, params, id = 1) {
-  let lastError = null;
+async function fallback(method, params) {
+  let errors = [];
 
   for (const endpoint of ENDPOINTS) {
     try {
-      return await callRpc(endpoint, rpcPayload(method, params, id));
-    } catch (error) {
-      lastError = error;
+      return await call(endpoint, {
+        jsonrpc: "2.0",
+        id: Date.now(),
+        method,
+        params
+      });
+    } catch (e) {
+      errors.push(`${endpoint}: ${e?.message || e}`);
     }
   }
 
-  throw lastError || new Error("All Solana RPC endpoints failed");
+  throw new Error(errors.join(" | "));
 }
 
-function toUiAmount(raw, decimals) {
-  return Number(raw) / Math.pow(10, decimals);
-}
+async function rankingDiagnostic(mint, commitment) {
+  const attempts = [];
 
-async function buildRanking(mint, commitment) {
-  // IMPORTANT:
-  // We deliberately use getTokenLargestAccounts here first.
-  // It is much lighter and more reliable on public Solana RPCs than
-  // scanning every token account with getProgramAccounts.
-  const supplyResponse = await callWithFallback(
-    "getTokenSupply",
-    [mint, { commitment }],
-    1
-  );
-
-  const supply = supplyResponse?.result?.value;
-
-  if (!supply?.amount || typeof supply.decimals !== "number") {
-    throw new Error("Could not read token supply");
-  }
-
-  const decimals = Number(supply.decimals);
-
-  const largestResponse = await callWithFallback(
-    "getTokenLargestAccounts",
-    [mint, { commitment }],
-    2
-  );
-
-  const tokenAccounts = largestResponse?.result?.value || [];
-
-  if (!Array.isArray(tokenAccounts) || tokenAccounts.length === 0) {
-    throw new Error("No token accounts returned");
-  }
-
-  const addresses = tokenAccounts
-    .map((x) => x?.address)
-    .filter(Boolean);
-
-  const multipleResponse = await callWithFallback(
-    "getMultipleAccounts",
-    [
-      addresses,
-      {
-        encoding: "jsonParsed",
-        commitment
-      }
-    ],
-    3
-  );
-
-  const infos = multipleResponse?.result?.value || [];
-  const byOwner = new Map();
-
-  tokenAccounts.forEach((account, index) => {
+  // First: the exact lightweight route currently used by the site.
+  for (const endpoint of ENDPOINTS) {
     try {
-      const owner =
-        infos[index]?.data?.parsed?.info?.owner;
+      const largest = await call(endpoint, {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getTokenLargestAccounts",
+        params: [mint, { commitment }]
+      });
 
-      const rawString = account?.amount;
+      const accounts = largest?.result?.value || [];
 
-      if (!owner || typeof rawString !== "string") return;
+      if (!accounts.length) {
+        throw new Error("getTokenLargestAccounts returned 0 accounts");
+      }
 
-      const raw = BigInt(rawString);
-      if (raw <= 0n) return;
+      const addresses = accounts.map(x => x.address).filter(Boolean);
 
-      const old = byOwner.get(owner) || 0n;
-      byOwner.set(owner, old + raw);
-    } catch {
-      // Ignore malformed token accounts.
+      const multiple = await call(endpoint, {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "getMultipleAccounts",
+        params: [
+          addresses,
+          { encoding: "jsonParsed", commitment }
+        ]
+      });
+
+      const infos = multiple?.result?.value || [];
+      const byOwner = new Map();
+
+      accounts.forEach((account, i) => {
+        const owner = infos[i]?.data?.parsed?.info?.owner;
+        const raw = account?.amount;
+
+        if (!owner || typeof raw !== "string") return;
+
+        const n = BigInt(raw);
+        if (n <= 0n) return;
+
+        byOwner.set(owner, (byOwner.get(owner) || 0n) + n);
+      });
+
+      const supplyResponse = await call(endpoint, {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "getTokenSupply",
+        params: [mint, { commitment }]
+      });
+
+      const supply = supplyResponse?.result?.value;
+      const decimals = Number(supply?.decimals ?? 0);
+
+      const holders = [...byOwner.entries()]
+        .map(([owner, raw]) => ({
+          owner,
+          raw: raw.toString(),
+          ui: Number(raw) / 10 ** decimals
+        }))
+        .sort((a,b) => BigInt(b.raw) > BigInt(a.raw) ? 1 : -1)
+        .slice(0, 20);
+
+      return {
+        ok: true,
+        method: "getAuraRanking",
+        mint,
+        decimals,
+        supply: {
+          amount: String(supply.amount),
+          decimals,
+          uiAmountString: String(supply.uiAmountString ?? "")
+        },
+        totalHolders: holders.length,
+        holders,
+        diagnostic: {
+          endpoint,
+          method: "getTokenLargestAccounts + getMultipleAccounts",
+          tokenAccountsReturned: accounts.length,
+          message: "Ranking route succeeded."
+        }
+      };
+    } catch (e) {
+      attempts.push({
+        endpoint,
+        message: e?.message || String(e)
+      });
     }
-  });
+  }
 
-  const holders = [...byOwner.entries()]
-    .map(([owner, raw]) => ({
-      account: "",
-      owner,
-      raw: raw.toString(),
-      ui: toUiAmount(raw.toString(), decimals)
-    }))
-    .filter((x) => Number.isFinite(x.ui) && x.ui > 0)
-    .sort((a, b) => {
-      const ar = BigInt(a.raw);
-      const br = BigInt(b.raw);
-      if (br > ar) return 1;
-      if (br < ar) return -1;
-      return 0;
-    });
+  const diagnosticText = attempts
+    .map(x => `${x.endpoint} -> ${x.message}`)
+    .join("\n");
 
-  return {
-    ok: true,
-    method: "getAuraRanking",
-    mint,
-    decimals,
-    supply: {
-      amount: String(supply.amount),
-      decimals,
-      uiAmountString: String(supply.uiAmountString ?? "")
-    },
-    // This is the number of wallets represented in the top-20
-    // token-account snapshot, not the total number of holders.
-    totalHolders: holders.length,
-    tokenAccountsChecked: tokenAccounts.length,
-    holders: holders.slice(0, 20)
-  };
+  const error = new Error(
+    "RANKING_DIAGNOSTIC\n" + diagnosticText
+  );
+  error.attempts = attempts;
+  throw error;
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Method not allowed"
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const payload =
-      typeof req.body === "string"
-        ? JSON.parse(req.body)
-        : req.body;
+      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
     const method = payload?.method;
-    const params = Array.isArray(payload?.params)
-      ? payload.params
-      : [];
+    const params = Array.isArray(payload?.params) ? payload.params : [];
 
-    if (!method || typeof method !== "string") {
-      return res.status(400).json({
-        error: "Missing RPC method"
-      });
+    if (!method) {
+      return res.status(400).json({ error: "Missing RPC method" });
     }
 
     if (method === "getAuraRanking") {
@@ -202,37 +193,37 @@ export default async function handler(req, res) {
         });
       }
 
-      const commitment =
-        typeof params[1]?.commitment === "string"
-          ? params[1].commitment
-          : "confirmed";
-
       try {
-        const result = await buildRanking(mint, commitment);
+        const result = await rankingDiagnostic(
+          mint,
+          params[1]?.commitment || "confirmed"
+        );
         return res.status(200).json(result);
-      } catch (error) {
-        console.error("getAuraRanking failed:", error);
+      } catch (e) {
+        console.error(e);
 
         return res.status(502).json({
-          error: "Ranking unavailable",
-          message: error?.message || "Could not load Solana ranking"
+          error: "Ranking diagnostic failed",
+          message: e?.message || "Unknown ranking error",
+          attempts: e?.attempts || []
         });
       }
     }
 
-    // Normal RPC proxy for the wallet check and token supply calls.
     let lastError = null;
 
     for (const endpoint of ENDPOINTS) {
       try {
-        const result = await callRpc(
-          endpoint,
-          rpcPayload(method, params, payload.id ?? 1)
+        return res.status(200).json(
+          await call(endpoint, {
+            jsonrpc: "2.0",
+            id: payload.id ?? 1,
+            method,
+            params
+          })
         );
-
-        return res.status(200).json(result);
-      } catch (error) {
-        lastError = error;
+      } catch (e) {
+        lastError = e;
       }
     }
 
@@ -240,12 +231,11 @@ export default async function handler(req, res) {
       error: "All Solana RPC endpoints failed",
       message: lastError?.message || "Unknown RPC error"
     });
-  } catch (error) {
-    console.error("RPC proxy error:", error);
-
+  } catch (e) {
+    console.error(e);
     return res.status(500).json({
       error: "RPC proxy error",
-      message: error?.message || "Unknown error"
+      message: e?.message || "Unknown error"
     });
   }
 }
