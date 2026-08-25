@@ -47,7 +47,7 @@ section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-betw
 
 <div class="card"><h2>🌾 Farm stats</h2><div class="sub">Live token data from Solana.</div>
 <div class="kpis"><div class="kpi"><b id="supply">—</b><small>Total supply</small></div><div class="kpi"><b id="holders">—</b><small>Top holders loaded</small></div><div class="kpi"><b id="updated">—</b><small>Last update</small></div><div class="kpi"><b>∞</b><small>Aura to farm</small></div></div>
-<div class="notice"><strong>Ranking:</strong> top on-chain token accounts returned by Solana RPC. Live snapshot, not a promise of price or profit.</div></div>
+<div class="notice"><strong>Ranking:</strong> Top $AURA holders grouped by wallet. Live on-chain snapshot, not a promise of price or profit.</div></div>
 </div>
 
 <section id="ranking"><div class="sectionhead"><div><h2>🏆 Aura Farmer Ranking</h2><div class="sub">Top $AURA holders right now</div></div><div class="refresh" id="refreshText">Loading…</div></div>
@@ -89,33 +89,57 @@ function setStatus(t,err=false){const e=document.getElementById("status");e.text
 
 async function loadRanking(){
   const refresh=document.getElementById("refreshText");
-  refresh.textContent="Loading live Solana data…";
+  refresh.textContent="Loading live Solana holders…";
   try{
     const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
     supplyRaw=Number(sup.value.amount);decimals=Number(sup.value.decimals);
     document.getElementById("supply").textContent=fmt(supplyRaw/10**decimals);
-    const tops=await rpc("getTokenLargestAccounts",[MINT,{commitment:"confirmed"}]);
-    const vals=tops.value||[];if(!vals.length)throw new Error("No token accounts returned");
-    const infos=await rpc("getMultipleAccounts",[vals.map(x=>x.address),{encoding:"jsonParsed",commitment:"confirmed"}]);
-    ranking=vals.map((x,i)=>{
-      const info=infos.value[i];let owner="Unknown";
-      try{owner=info.data.parsed.info.owner}catch(e){}
-      return {account:x.address,owner,raw:Number(x.amount),ui:Number(x.uiAmountString||x.amount/10**decimals)}
-    }).sort((a,b)=>b.raw-a.raw);
+
+    let aggregated=null;
+    try{ aggregated=await rpc("getAuraRanking",[MINT,{commitment:"confirmed"}]); }
+    catch(e){ console.warn("getAuraRanking unavailable, using fallback:",e); }
+
+    if(aggregated&&Array.isArray(aggregated.holders)&&aggregated.holders.length){
+      ranking=aggregated.holders.map(x=>({
+        account:"", owner:x.owner, raw:Number(x.raw), ui:Number(x.raw)/10**decimals
+      })).filter(x=>x.raw>0).sort((a,b)=>b.raw-a.raw);
+    }else{
+      const tops=await rpc("getTokenLargestAccounts",[MINT,{commitment:"confirmed"}]);
+      const vals=tops.value||[];
+      if(!vals.length)throw new Error("No token accounts returned");
+      const infos=await rpc("getMultipleAccounts",[vals.map(x=>x.address),{encoding:"jsonParsed",commitment:"confirmed"}]);
+      const byOwner=new Map();
+      vals.forEach((x,i)=>{
+        try{
+          const owner=infos.value[i].data.parsed.info.owner;
+          const raw=Number(x.amount);
+          byOwner.set(owner,(byOwner.get(owner)||0)+raw);
+        }catch(e){}
+      });
+      ranking=[...byOwner.entries()].map(([owner,raw])=>({
+        account:"",owner,raw,ui:raw/10**decimals
+      })).sort((a,b)=>b.raw-a.raw);
+    }
+
     document.getElementById("holders").textContent=ranking.length;
     document.getElementById("updated").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-    renderRanking();refresh.textContent="Updated just now";
+    renderRanking();
+    refresh.textContent="Updated just now";
   }catch(e){
     console.error(e);
     document.getElementById("rankingRows").innerHTML='<div class="row"><div>!</div><div>Solana data unavailable. Retrying automatically…</div><div></div><div></div></div>';
-    refresh.textContent="Retrying…";setTimeout(loadRanking,8000);
+    refresh.textContent="Retrying…";
+    setTimeout(loadRanking,8000);
   }
 }
 
 function renderRanking(){
   const el=document.getElementById("rankingRows");
-  if(!ranking.length){el.innerHTML='<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div></div>';return}
-  el.innerHTML=ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)}<div style="color:#6f886f;font-size:10px">token account ${short(x.account)}</div></div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div></div>`).join("")
+  if(!ranking.length){
+    el.innerHTML='<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div></div>';
+    return;
+  }
+  el.innerHTML=ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)}</div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div></div>`).join("");
 }
 
 async function checkWallet(){
