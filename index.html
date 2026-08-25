@@ -12,14 +12,15 @@ a{color:inherit;text-decoration:none}.wrap{max-width:1080px;margin:auto;padding:
 nav{position:sticky;top:0;z-index:20;background:rgba(6,16,9,.82);backdrop-filter:blur(14px);border-bottom:1px solid rgba(124,255,79,.12)}
 .nav{height:70px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:.04em}.brandmark{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#d8ff72,#39a63c);border:2px solid #b8ff72}.navlinks{display:flex;gap:22px;color:var(--muted);font-size:14px}
 .hero{text-align:center;padding:72px 0 42px}.eyebrow{display:inline-flex;border:1px solid #355c35;background:#0c1d11;border-radius:999px;padding:8px 13px;color:var(--lime);font-size:12px;font-weight:800;letter-spacing:.08em}.hero h1{font-size:clamp(52px,11vw,112px);line-height:.84;margin:24px 0 18px;font-weight:1000;letter-spacing:-.075em}.hero h1 span{color:var(--green)}.hero p{max-width:650px;margin:auto;color:var(--muted);font-size:18px;line-height:1.55}
-.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{border:1px solid var(--line);background:#0d2112;color:var(--text);padding:13px 18px;border-radius:13px;font-weight:800;cursor:pointer}.btn.primary{background:var(--green);color:#061009;border-color:var(--green)}
+.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:28px}.btn{border:1px solid var(--line);background:#0d2112;color:var(--text);padding:13px 18px;border-radius:13px;font-weight:800;cursor:pointer}.btn.primary{background:var(--green);color:#061009;border-color:var(--green)}.btn.small{padding:8px 10px;font-size:12px}
 .contract{margin:25px auto 0;max-width:800px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:12px}.contract code{background:#08170c;border:1px solid var(--line);padding:9px 11px;border-radius:10px;color:#d9ffd0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .grid{display:grid;grid-template-columns:1.35fr .65fr;gap:18px;margin:30px 0}.card{background:linear-gradient(180deg,rgba(16,37,21,.92),rgba(8,22,12,.92));border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 15px 60px rgba(0,0,0,.2)}.card h2{margin:0 0 6px;font-size:25px}.sub{color:var(--muted);font-size:13px}
 .lookup{display:flex;gap:9px;margin-top:18px}.lookup input{flex:1;min-width:0;background:#07140a;border:1px solid #315535;border-radius:12px;padding:13px;color:#fff;outline:none}.status{margin-top:12px;color:var(--muted);font-size:12px;min-height:18px}.result{display:none;margin-top:18px;padding:18px;border:1px solid #335c38;border-radius:16px;background:#07170b}.result.show{display:block}.score{font-size:48px;font-weight:950;color:var(--green);line-height:1}.resultgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.stat{background:#0b1c0f;border:1px solid #203f27;border-radius:12px;padding:12px}.stat b{display:block;font-size:17px}.stat small{color:var(--muted)}
+.historygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}.historygrid .stat b{font-size:16px}
 .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.kpi{padding:16px;border-radius:15px;background:#08170c;border:1px solid #203f27}.kpi b{font-size:25px}.kpi small{display:block;color:var(--muted);margin-top:3px}
-section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-between;gap:15px;align-items:end;margin-bottom:15px}.sectionhead h2{margin:0;font-size:30px}.refresh{color:var(--muted);font-size:12px}.table{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#08170c}.row{display:grid;grid-template-columns:60px 1fr 150px 130px;gap:10px;align-items:center;padding:15px 16px;border-bottom:1px solid #17321e}.row:last-child{border-bottom:0}.row.head{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;background:#0b1d10}.rank{font-size:21px;font-weight:900}.holder{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis}.amount{text-align:right;font-weight:800}.pct{text-align:right;color:var(--lime)}
+section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-between;gap:15px;align-items:end;margin-bottom:15px}.sectionhead h2{margin:0;font-size:30px}.refresh{color:var(--muted);font-size:12px}.table{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#08170c}.row{display:grid;grid-template-columns:60px 1fr 150px 130px 110px;gap:10px;align-items:center;padding:15px 16px;border-bottom:1px solid #17321e}.row:last-child{border-bottom:0}.row.head{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;background:#0b1d10}.rank{font-size:21px;font-weight:900}.holder{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;overflow:hidden;text-overflow:ellipsis}.amount{text-align:right;font-weight:800}.pct{text-align:right;color:var(--lime)}.days{text-align:right;color:var(--gold);font-weight:800}
 .notice{margin-top:12px;color:var(--muted);font-size:12px;line-height:1.5}.notice strong{color:#d9ffd0}.share{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center}.sharebox{background:linear-gradient(135deg,#173d1c,#08150b);border:1px solid #4e803b;border-radius:20px;padding:26px}.sharebox .mini{color:var(--gold);font-weight:900;letter-spacing:.1em;font-size:12px}.sharebox h3{font-size:36px;margin:8px 0}.sharebox p{color:var(--muted);line-height:1.5}.footer{padding:55px 0 70px;color:var(--muted);font-size:12px;text-align:center}.pill{display:inline-block;border:1px solid var(--line);padding:7px 10px;border-radius:999px;margin:3px}
-@media(max-width:760px){.navlinks{display:none}.hero{padding-top:48px}.grid,.share{grid-template-columns:1fr}.resultgrid{grid-template-columns:1fr 1fr}.row{grid-template-columns:45px 1fr 90px}.row .pct{display:none}.row.head{grid-template-columns:45px 1fr 90px}.lookup{flex-direction:column}.lookup .btn{width:100%}}
+@media(max-width:760px){.navlinks{display:none}.hero{padding-top:48px}.grid,.share{grid-template-columns:1fr}.resultgrid{grid-template-columns:1fr 1fr}.historygrid{grid-template-columns:1fr 1fr}.row{grid-template-columns:45px 1fr 90px}.row .pct,.row .days{display:none}.row.head{grid-template-columns:45px 1fr 90px}.lookup{flex-direction:column}.lookup .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -30,7 +31,7 @@ section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-betw
 <h1>FARM <span>AURA.</span></h1>
 <p>Stop farming crops. Start farming aura. Hold $AURA, climb the leaderboard and prove who actually has the aura.</p>
 <div class="actions"><a class="btn primary" href="#ranking">🏆 View Ranking</a><a class="btn" href="#check">⚡ Check My Aura</a><a class="btn" href="https://pump.fun/coin/8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump" target="_blank">Buy $AURA ↗</a></div>
-<div class="contract">Contract <code id="mint">8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump</code><button class="btn" style="padding:8px 10px" onclick="copyMint()">Copy</button></div>
+<div class="contract">Contract <code id="mint">8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump</code><button class="btn small" onclick="copyMint()">Copy</button></div>
 </header>
 
 <main class="wrap">
@@ -40,23 +41,31 @@ section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-betw
 <div class="lookup"><input id="wallet" placeholder="Paste your Solana wallet address…"><button class="btn primary" onclick="checkWallet()">Check Aura</button></div>
 <div class="actions" style="justify-content:flex-start;margin-top:10px"><button class="btn" onclick="connectPhantom()">🟣 Connect Phantom</button></div>
 <div id="status" class="status"></div>
-<div id="result" class="result"><div class="sub">CURRENT AURA RANK</div><div id="rank" class="score">—</div>
+<div id="result" class="result">
+<div class="sub">CURRENT AURA RANK</div><div id="rank" class="score">—</div>
 <div class="resultgrid"><div class="stat"><b id="rAmount">—</b><small>$AURA held</small></div><div class="stat"><b id="rPct">—</b><small>of total supply</small></div><div class="stat"><b id="rWallet">—</b><small>wallet</small></div></div>
-<div class="actions" style="justify-content:flex-start"><button class="btn primary" onclick="shareCard()">Share my Aura card</button><button class="btn" onclick="downloadCard()">Download card</button></div></div>
+<div class="historygrid">
+<div class="stat"><b id="rDays">—</b><small>days holding</small></div>
+<div class="stat"><b id="rBought">—</b><small>AURA bought/received</small></div>
+<div class="stat"><b id="rSold">—</b><small>AURA sold/sent</small></div>
+<div class="stat"><b id="rAura">—</b><small>Aura points</small></div>
+</div>
+<div class="actions" style="justify-content:flex-start"><button class="btn primary" onclick="shareCard()">Share my Aura card</button><button class="btn" onclick="downloadCard()">Download card</button><button class="btn" onclick="openSolscan()">View wallet ↗</button></div>
+</div>
 </div>
 
 <div class="card"><h2>🌾 Farm stats</h2><div class="sub">Live token data from Solana.</div>
 <div class="kpis"><div class="kpi"><b id="supply">—</b><small>Total supply</small></div><div class="kpi"><b id="holders">—</b><small>Holders found</small></div><div class="kpi"><b id="updated">—</b><small>Last update</small></div><div class="kpi"><b>∞</b><small>Aura to farm</small></div></div>
-<div class="notice"><strong>Ranking:</strong> Top $AURA holders grouped by wallet. Live on-chain snapshot, not a promise of price or profit.</div></div>
+<div class="notice"><strong>Aura:</strong> holding time is converted into points from the wallet's reconstructed $AURA balance history. Current implementation uses token-days (average held balance × days).</div></div>
 </div>
 
-<section id="ranking"><div class="sectionhead"><div><h2>🏆 Aura Farmer Ranking</h2><div class="sub">Top $AURA holders right now</div></div><div class="refresh" id="refreshText">Loading…</div></div>
-<div class="table"><div class="row head"><div>#</div><div>Farmer</div><div class="amount">AURA</div><div class="pct">% supply</div></div>
-<div id="rankingRows"><div class="row"><div>—</div><div>Loading on-chain data…</div><div></div><div></div></div></div></div>
-<div class="notice">⚠️ Experimental community leaderboard. Balances are read directly from Solana and can change at any time.</div></section>
+<section id="ranking"><div class="sectionhead"><div><h2>🏆 Aura Farmer Ranking</h2><div class="sub">Top $AURA holders right now</div></div><div><button class="btn small" onclick="loadRanking()">🔄 Refresh</button><div class="refresh" id="refreshText">Loading…</div></div></div>
+<div class="table"><div class="row head"><div>#</div><div>Farmer</div><div class="amount">AURA</div><div class="pct">% supply</div><div class="days">Held</div></div>
+<div id="rankingRows"><div class="row"><div>—</div><div>Loading on-chain data…</div><div></div><div></div><div></div></div></div></div>
+<div class="notice">⚠️ Experimental community leaderboard. Balances are read from Solana/Helius and can change at any time. Holding metrics are estimates based on observable token movements.</div></section>
 
-<section id="share"><div class="share card"><div><h2>Share your aura.</h2><p class="sub">Get your wallet ranked, then share your farmer card on X.</p><div class="pill">🏆 RANKING</div><div class="pill">🌱 $AURA</div><div class="pill">⚡ ON-CHAIN</div></div>
-<div class="sharebox"><div class="mini">AURA FARM</div><h3>WHO HAS AURA?</h3><p>Check your wallet. Claim your rank. Farm harder.</p><button class="btn primary" onclick="document.getElementById('check').scrollIntoView({behavior:'smooth'})">Check my rank →</button></div></div></section>
+<section id="share"><div class="share card"><div><h2>Share your aura.</h2><p class="sub">Get your wallet ranked, then share your farmer card on X.</p><div class="pill">🏆 RANKING</div><div class="pill">🌱 $AURA</div><div class="pill">🔥 HOLD</div><div class="pill">⚡ ON-CHAIN</div></div>
+<div class="sharebox"><div class="mini">AURA FARM</div><h3>WHO HAS AURA?</h3><p>Hold $AURA. Build your streak. Farm harder.</p><button class="btn primary" onclick="document.getElementById('check').scrollIntoView({behavior:'smooth'})">Check my rank →</button></div></div></section>
 </main>
 
 <footer class="footer wrap">AURA FARM · $AURA · Built for the community · <a href="https://x.com/aurafarmcrypto" target="_blank">@AuraFarmCrypto</a><br><br>Nothing on this site is financial advice. Do your own research.</footer>
@@ -67,113 +76,85 @@ const API="/api/rpc";
 let ranking=[],supplyRaw=0,decimals=6,lastResult=null;
 
 async function apiCall(payload){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),15000);
-  try{
-    const r=await fetch(API,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload),
-      cache:"no-store",
-      signal:controller.signal
-    });
-    const text=await r.text();
-    let j;
-    try{j=JSON.parse(text)}catch{throw new Error("API returned invalid JSON (HTTP "+r.status+")")}
-    if(!r.ok){
-      const msg=j?.message||j?.error||("HTTP "+r.status);
-      throw new Error(msg);
-    }
-    if(j?.error)throw new Error(j.error.message||"RPC error");
-    return j;
-  }finally{clearTimeout(timer)}
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+ try{
+  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store",signal:controller.signal});
+  const text=await r.text();let j;try{j=JSON.parse(text)}catch{throw new Error("API returned invalid JSON (HTTP "+r.status+")")}
+  if(!r.ok)throw new Error(j?.message||j?.error||("HTTP "+r.status));
+  if(j?.error)throw new Error(j.error.message||"RPC error");
+  return j;
+ }finally{clearTimeout(timer)}
 }
-
-async function rpc(method,params=[]){
-  const j=await apiCall({jsonrpc:"2.0",id:Date.now(),method,params});
-  return j.result;
-}
-
-function fmt(n){return Number(n).toLocaleString("en-US",{maximumFractionDigits:2})}
+async function rpc(method,params=[]){const j=await apiCall({jsonrpc:"2.0",id:Date.now(),method,params});return j.result}
+function fmt(n){return Number(n||0).toLocaleString("en-US",{maximumFractionDigits:2})}
+function fmtInt(n){return Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0})}
 function short(a){return a?a.slice(0,5)+"…"+a.slice(-5):"Unknown"}
 function setStatus(t,err=false){const e=document.getElementById("status");e.textContent=t;e.style.color=err?"#ff9a9a":"#9eb39e"}
-
-async function loadRanking(){
-  const refresh=document.getElementById("refreshText");
-  refresh.textContent="Loading live Solana holders…";
-  try{
-    const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
-    supplyRaw=Number(sup.value.amount);
-    decimals=Number(sup.value.decimals);
-    document.getElementById("supply").textContent=fmt(Number(sup.value.uiAmount||supplyRaw/10**decimals));
-
-    const data=await apiCall({
-      jsonrpc:"2.0",id:Date.now(),
-      method:"getAuraRanking",
-      params:[MINT,{commitment:"confirmed"}]
-    });
-
-    const vals=data?.result?.holders||[];
-    if(!vals.length)throw new Error("RPC returned zero token holders");
-
-    ranking=vals.map(x=>({
-      account:x.account||"",
-      owner:x.owner,
-      raw:Number(x.raw),
-      ui:Number(x.ui)
-    })).filter(x=>x.owner&&x.raw>0).sort((a,b)=>b.raw-a.raw);
-
-    document.getElementById("holders").textContent=ranking.length;
-    document.getElementById("updated").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-    renderRanking();
-    refresh.textContent="Updated just now";
-  }catch(e){
-    console.error(e);
-    document.getElementById("rankingRows").innerHTML='<div class="row"><div>!</div><div><b>Ranking unavailable.</b><br><span style="color:#ff9a9a">'+escapeHtml(e.message)+'</span></div><div></div><div></div></div>';
-    refresh.textContent="Retrying…";
-    setTimeout(loadRanking,12000);
-  }
-}
-
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 
+async function loadRanking(){
+ const refresh=document.getElementById("refreshText");refresh.textContent="Loading live Solana holders…";
+ try{
+  const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
+  supplyRaw=Number(sup.value.amount);decimals=Number(sup.value.decimals);
+  document.getElementById("supply").textContent=fmt(Number(sup.value.uiAmount||supplyRaw/10**decimals));
+  const data=await apiCall({jsonrpc:"2.0",id:Date.now(),method:"getAuraRanking",params:[MINT,{commitment:"confirmed"}]});
+  const vals=data?.result?.holders||[];if(!vals.length)throw new Error("RPC returned zero token holders");
+  ranking=vals.map(x=>({owner:x.owner,raw:Number(x.raw),ui:Number(x.ui),days:Number(x.days||0),aura:Number(x.aura||0)})).filter(x=>x.owner&&x.raw>0).sort((a,b)=>b.raw-a.raw);
+  document.getElementById("holders").textContent=ranking.length;
+  document.getElementById("updated").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  renderRanking();refresh.textContent="Updated just now";
+ }catch(e){
+  console.error(e);document.getElementById("rankingRows").innerHTML='<div class="row"><div>!</div><div><b>Ranking unavailable.</b><br><span style="color:#ff9a9a">'+escapeHtml(e.message)+'</span></div><div></div><div></div><div></div></div>';
+  refresh.textContent="Retrying…";setTimeout(loadRanking,15000);
+ }
+}
 function renderRanking(){
-  const el=document.getElementById("rankingRows");
-  if(!ranking.length){el.innerHTML='<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div></div>';return}
-  el.innerHTML=ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)}</div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div></div>`).join("");
+ const el=document.getElementById("rankingRows");
+ el.innerHTML=ranking.length?ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)} <button class="btn small" onclick="event.stopPropagation();copyText('${x.owner}')">Copy</button></div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div><div class="days">${x.days?x.days+"d":"—"}</div></div>`).join(""):'<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div><div></div></div>';
 }
-
 async function checkWallet(){
-  const w=document.getElementById("wallet").value.trim();
-  if(!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w)){setStatus("That doesn't look like a valid Solana address.",true);return}
-  setStatus("Checking the live ranking…");
-  try{
-    if(!ranking.length)await loadRanking();
-    let direct=ranking.find(x=>x.owner===w),amount=direct?direct.ui:0,rank=direct?ranking.indexOf(direct)+1:null;
-    if(!direct){
-      const accounts=await rpc("getTokenAccountsByOwner",[w,{mint:MINT},{encoding:"jsonParsed",commitment:"confirmed"}]);
-      amount=(accounts.value||[]).reduce((s,a)=>s+Number(a.account.data.parsed.info.tokenAmount.uiAmount||0),0);
-      rank=amount>0?ranking.filter(x=>x.ui>amount).length+1:null;
-    }
-    const pct=supplyRaw?(amount/(supplyRaw/10**decimals)*100):0;
-    lastResult={wallet:w,amount,rank,pct};
-    document.getElementById("rank").textContent=rank?"#"+rank:"UNRANKED";
-    document.getElementById("rAmount").textContent=fmt(amount);
-    document.getElementById("rPct").textContent=pct.toFixed(4)+"%";
-    document.getElementById("rWallet").textContent=short(w);
-    document.getElementById("result").classList.add("show");
-    setStatus("Live balance checked on Solana.");
-  }catch(e){console.error(e);setStatus("Couldn't check this wallet: "+e.message,true)}
+ const w=document.getElementById("wallet").value.trim();
+ if(!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w)){setStatus("That doesn't look like a valid Solana address.",true);return}
+ setStatus("Reconstructing your $AURA history…");
+ try{
+  const data=await apiCall({jsonrpc:"2.0",id:Date.now(),method:"getAuraProfile",params:[w,{mint:MINT}]});
+  const p=data?.result;if(!p)throw new Error("No profile returned");
+  lastResult={wallet:w,...p};
+  document.getElementById("rank").textContent=p.rank?"#"+p.rank:"UNRANKED";
+  document.getElementById("rAmount").textContent=fmt(p.amount);
+  document.getElementById("rPct").textContent=Number(p.pct||0).toFixed(4)+"%";
+  document.getElementById("rWallet").textContent=short(w);
+  document.getElementById("rDays").textContent=(p.days||0)+"d";
+  document.getElementById("rBought").textContent=fmt(p.bought);
+  document.getElementById("rSold").textContent=fmt(p.sold);
+  document.getElementById("rAura").textContent=fmtInt(p.aura);
+  document.getElementById("result").classList.add("show");
+  setStatus("History reconstructed from Solana/Helius.");
+ }catch(e){console.error(e);setStatus("Couldn't check this wallet: "+e.message,true)}
 }
-
-async function connectPhantom(){
-  if(!window.solana||!window.solana.isPhantom){setStatus("Open this page in a browser with Phantom installed.",true);return}
-  try{const r=await window.solana.connect();document.getElementById("wallet").value=r.publicKey.toString();await checkWallet()}
-  catch(e){setStatus("Phantom connection cancelled.",true)}
+async function connectPhantom(){if(!window.solana||!window.solana.isPhantom){setStatus("Open this page in a browser with Phantom installed.",true);return}try{const r=await window.solana.connect();document.getElementById("wallet").value=r.publicKey.toString();await checkWallet()}catch(e){setStatus("Phantom connection cancelled.",true)}}
+function copyText(t){navigator.clipboard?.writeText(t);setStatus("Copied: "+short(t))}
+function copyMint(){copyText(MINT)}
+function openSolscan(){if(lastResult?.wallet)window.open("https://solscan.io/account/"+encodeURIComponent(lastResult.wallet),"_blank")}
+function shareCard(){
+ if(!lastResult)return;
+ const p=lastResult;
+ const text=`I have AURA. 🏆 ${p.rank?"#"+p.rank:"UNRANKED"}\n\n${fmt(p.amount)} $AURA\n🔥 ${p.days||0} days holding\n⚡ ${fmtInt(p.aura)} Aura points\n\nFarm your aura: https://aura-farm-one.vercel.app/\n\n$AURA`;
+ window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text),"_blank")
 }
-function copyMint(){navigator.clipboard.writeText(MINT);setStatus("Contract copied.")}
-function shareCard(){if(!lastResult)return;const text=lastResult.rank?`I have AURA. 🏆 #${lastResult.rank}\n\n${fmt(lastResult.amount)} $AURA\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`:`I’m holding ${fmt(lastResult.amount)} $AURA. 🌱\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`;window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text),"_blank")}
-function downloadCard(){if(!lastResult)return;const c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=1200;c.height=675;ctx.fillStyle="#061009";ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle="#7cff4f";ctx.font="900 72px Arial";ctx.fillText("AURA FARM",70,110);ctx.fillStyle="#f4ffe9";ctx.font="900 110px Arial";ctx.fillText(lastResult.rank?"#"+lastResult.rank:"UNRANKED",70,280);ctx.font="700 42px Arial";ctx.fillText(fmt(lastResult.amount)+" $AURA",70,360);ctx.fillStyle="#9eb39e";ctx.font="28px Arial";ctx.fillText("Who actually has aura?",70,440);ctx.fillText("aura-farm-one.vercel.app",70,500);const a=document.createElement("a");a.download="aura-farmer-card.png";a.href=c.toDataURL("image/png");a.click()}
+function downloadCard(){
+ if(!lastResult)return;
+ const p=lastResult,c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=1200;c.height=675;
+ ctx.fillStyle="#061009";ctx.fillRect(0,0,c.width,c.height);
+ ctx.fillStyle="#7cff4f";ctx.font="900 68px Arial";ctx.fillText("AURA FARM",70,100);
+ ctx.fillStyle="#f4ffe9";ctx.font="900 105px Arial";ctx.fillText(p.rank?"#"+p.rank:"UNRANKED",70,250);
+ ctx.font="700 38px Arial";ctx.fillText(fmt(p.amount)+" $AURA",70,330);
+ ctx.fillStyle="#ffd45a";ctx.font="700 32px Arial";ctx.fillText("🔥 "+(p.days||0)+" days holding",70,390);
+ ctx.fillStyle="#9eb39e";ctx.font="700 30px Arial";ctx.fillText("⚡ "+fmtInt(p.aura)+" Aura points",70,440);
+ ctx.font="26px Arial";ctx.fillText("Who actually has aura?",70,515);ctx.fillText("aura-farm-one.vercel.app",70,565);
+ const a=document.createElement("a");a.download="aura-farmer-card.png";a.href=c.toDataURL("image/png");a.click()
+}
 loadRanking();setInterval(loadRanking,60000);
 </script>
 </body>
