@@ -111,7 +111,7 @@ async function loadRanking(){
 }
 function renderRanking(){
  const el=document.getElementById("rankingRows");
- el.innerHTML=ranking.length?ranking.map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)} <button class="btn small" onclick="event.stopPropagation();copyText('${x.owner}')">Copy</button></div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div><div class="days">${x.days?x.days+"d":"—"}</div></div>`).join(""):'<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div><div></div></div>';
+ el.innerHTML=ranking.length?ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)} <button class="btn small" onclick="event.stopPropagation();copyText('${x.owner}')">Copy</button></div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div><div class="days">${x.days?x.days+"d":"—"}</div></div>`).join(""):'<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div><div></div></div>';
 }
 async function checkWallet(){
  const w=document.getElementById("wallet").value.trim();
