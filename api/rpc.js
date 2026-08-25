@@ -1,5 +1,3 @@
-const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -22,14 +20,12 @@ export default async function handler(req, res) {
     const endpoints = [
       "https://solana-rpc.publicnode.com",
       "https://api.mainnet-beta.solana.com",
-      "https://api.mainnet.solana.com",
-      "https://solana.drpc.org",
-      "https://endpoints.omniatech.io/v1/sol/mainnet/public"
+      "https://solana.drpc.org"
     ];
 
     async function rpcCall(endpoint, rpcPayload) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      const timer = setTimeout(() => controller.abort(), 12000);
 
       try {
         const response = await fetch(endpoint, {
@@ -63,10 +59,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Ranking: use getTokenLargestAccounts directly.
-    // This is much lighter than scanning every token account with
-    // getProgramAccounts and avoids the public-RPC limits that were
-    // causing the old ranking request to fail.
     if (method === "getAuraRanking") {
       let lastError = null;
 
@@ -80,73 +72,39 @@ export default async function handler(req, res) {
           });
 
           const accounts = largest?.result?.value || [];
-
           if (!accounts.length) {
             throw new Error("No token accounts returned");
           }
 
-          // Fetch the owner of each largest token account.
-          const ownerMap = new Map();
+          const addresses = accounts.map((x) => x.address);
+          const multiple = await rpcCall(endpoint, {
+            jsonrpc: "2.0",
+            id: 2,
+            method: "getMultipleAccounts",
+            params: [
+              addresses,
+              {
+                encoding: "jsonParsed",
+                commitment: "confirmed"
+              }
+            ]
+          });
 
-          for (let i = 0; i < accounts.length; i += 100) {
-            const batch = accounts.slice(i, i + 100);
-
-            const multiple = await rpcCall(endpoint, {
-              jsonrpc: "2.0",
-              id: 2,
-              method: "getMultipleAccounts",
-              params: [
-                batch.map((x) => x.address),
-                {
-                  encoding: "jsonParsed",
-                  commitment: "confirmed"
-                }
-              ]
-            });
-
-            const infos = multiple?.result?.value || [];
-
-            infos.forEach((account, index) => {
-              try {
-                const owner =
-                  account?.data?.parsed?.info?.owner;
-
-                if (owner) {
-                  ownerMap.set(batch[index].address, owner);
-                }
-              } catch {}
-            });
-          }
-
-          // Aggregate balances by wallet owner.
+          const infos = multiple?.result?.value || [];
           const byOwner = new Map();
+          const decimals = 6; // Decimales seguros estándar para Pump.fun
 
-          for (const account of accounts) {
-            const owner = ownerMap.get(account.address);
-            if (!owner) continue;
+          accounts.forEach((acc, i) => {
+            try {
+              const info = infos[i]?.data?.parsed?.info;
+              const owner = info?.owner;
+              const raw = Number(acc.amount);
 
-            const raw = Number(account.amount);
-            if (!Number.isFinite(raw) || raw <= 0) continue;
-
-            byOwner.set(owner, (byOwner.get(owner) || 0) + raw);
-          }
-
-          const decimals =
-            largest?.result?.value?.[0]?.uiAmountString != null &&
-            largest?.result?.value?.[0]?.amount
-              ? Math.max(
-                  0,
-                  Math.round(
-                    Math.log10(
-                      Number(largest.result.value[0].amount) /
-                      Math.max(
-                        Number(largest.result.value[0].uiAmountString),
-                        1e-18
-                      )
-                    )
-                  )
-                )
-              : 6;
+              if (owner && Number.isFinite(raw) && raw > 0) {
+                byOwner.set(owner, (byOwner.get(owner) || 0) + raw);
+              }
+            } catch (err) {}
+          });
 
           const holders = [...byOwner.entries()]
             .map(([owner, raw]) => ({
@@ -177,7 +135,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Generic RPC passthrough for the other calls used by the frontend.
     let lastError = null;
 
     for (const endpoint of endpoints) {
