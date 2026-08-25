@@ -137,7 +137,11 @@ async function loadRanking(){
         '<div class="row"><div>!</div><div>Ranking temporarily unavailable. Retrying automatically…</div><div></div><div></div></div>';
     }
 
-    refresh.textContent="Retrying…";
+    const diagnostic = String(e?.message || e || "Unknown error");
+    const safe = diagnostic.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    document.getElementById("rankingRows").innerHTML =
+      '<div class="row"><div>!</div><div><strong>Ranking diagnostic:</strong><br><pre style="white-space:pre-wrap;font-size:11px;color:#ffb0b0;margin:8px 0 0">'+safe+'</pre></div><div></div><div></div></div>';
+    refresh.textContent="Error diagnostic";
   }finally{
     loading=false;
   }
