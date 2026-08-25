@@ -94,23 +94,49 @@ async function loadRanking(){
   const refresh=document.getElementById("refreshText");
   refresh.textContent="Loading live Solana holders…";
   try{
+    // Supply is requested separately so a ranking failure never blanks the supply.
+    try{
+      const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
+      if(sup?.value){
+        supplyRaw=Number(sup.value.amount);
+        decimals=Number(sup.value.decimals);
+        document.getElementById("supply").textContent=
+          sup.value.uiAmountString ?? fmt(supplyRaw/10**decimals);
+      }
+    }catch(supplyError){
+      console.error("Supply RPC failed:",supplyError);
+    }
+
     const data=await rpc("getAuraRanking",[MINT,{commitment:"confirmed"}]);
     decimals=Number(data.decimals);
     supplyRaw=Number(data.supply.amount);
-    document.getElementById("supply").textContent=fmt(Number(data.supply.uiAmountString));
+    document.getElementById("supply").textContent=
+      data.supply.uiAmountString || fmt(supplyRaw/10**decimals);
+
     ranking=Array.isArray(data.holders)?data.holders.map(x=>({
       account:x.account||"",
       owner:x.owner,
       raw:Number(x.raw),
       ui:Number(x.ui)
     })).filter(x=>x.owner&&x.raw>0):[];
+
     document.getElementById("holders").textContent=String(data.totalHolders||ranking.length);
-    document.getElementById("updated").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    document.getElementById("updated").textContent=
+      new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+
     renderRanking();
     refresh.textContent="Updated just now";
   }catch(e){
-    console.error(e);
-    document.getElementById("rankingRows").innerHTML='<div class="row"><div>!</div><div>Solana data unavailable. Retrying automatically…</div><div></div><div></div></div>';
+    console.error("Ranking load failed:",e);
+
+    // Keep any successfully loaded supply visible.
+    if(ranking.length){
+      renderRanking();
+    }else{
+      document.getElementById("rankingRows").innerHTML=
+        '<div class="row"><div>!</div><div>Ranking temporarily unavailable. Retrying automatically…</div><div></div><div></div></div>';
+    }
+
     refresh.textContent="Retrying…";
   }finally{
     loading=false;
