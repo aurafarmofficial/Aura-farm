@@ -1,8 +1,11 @@
+const HELIUS_RPC = process.env.HELIUS_API_KEY
+  ? `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+  : null;
+
 const ENDPOINTS = [
+  ...(HELIUS_RPC ? [HELIUS_RPC] : []),
   "https://api.mainnet.solana.com",
-  "https://solana-rpc.publicnode.com",
-  "https://api.mainnet-beta.solana.com",
-  "https://solana.drpc.org"
+  "https://api.mainnet-beta.solana.com"
 ];
 
 const DEFAULT_TIMEOUT = 15000;
@@ -38,12 +41,17 @@ async function rpcCall(endpoint, payload) {
         data?.message ||
         text.slice(0, 160) ||
         `HTTP ${response.status}`;
-      throw new Error(`${endpoint}: HTTP ${response.status} — ${detail}`);
+
+      throw new Error(
+        `${endpoint}: HTTP ${response.status} — ${detail}`
+      );
     }
 
     if (data?.error) {
       throw new Error(
-        `${endpoint}: RPC ${data.error.code || ""} — ${data.error.message || "RPC error"}`
+        `${endpoint}: RPC ${data.error.code || ""} — ${
+          data.error.message || "RPC error"
+        }`
       );
     }
 
@@ -76,17 +84,24 @@ async function getAuraRanking(mint, config) {
         jsonrpc: "2.0",
         id: 1,
         method: "getTokenLargestAccounts",
-        params: [mint, config || { commitment: "confirmed" }]
+        params: [
+          mint,
+          config || { commitment: "confirmed" }
+        ]
       });
 
       const accounts = largest?.result?.value || [];
+
       if (!accounts.length) {
-        throw new Error(`${endpoint}: getTokenLargestAccounts returned zero accounts`);
+        throw new Error(
+          `${endpoint}: getTokenLargestAccounts returned zero accounts`
+        );
       }
 
-      // Solana returns decimals with every largest-account result.
       const decimals = Number(accounts[0]?.decimals ?? 6);
-      const addresses = accounts.map(x => x.address).filter(Boolean);
+      const addresses = accounts
+        .map(x => x.address)
+        .filter(Boolean);
 
       const multiple = await rpcCall(endpoint, {
         jsonrpc: "2.0",
@@ -110,7 +125,10 @@ async function getAuraRanking(mint, config) {
         const raw = Number(acc.amount);
 
         if (owner && Number.isFinite(raw) && raw > 0) {
-          byOwner.set(owner, (byOwner.get(owner) || 0) + raw);
+          byOwner.set(
+            owner,
+            (byOwner.get(owner) || 0) + raw
+          );
         }
       });
 
@@ -126,7 +144,9 @@ async function getAuraRanking(mint, config) {
         .slice(0, 20);
 
       if (!holders.length) {
-        throw new Error(`${endpoint}: token accounts found but no owners could be parsed`);
+        throw new Error(
+          `${endpoint}: token accounts found but no owners could be parsed`
+        );
       }
 
       return {
@@ -154,7 +174,9 @@ export default async function handler(req, res) {
 
   try {
     const payload =
-      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      typeof req.body === "string"
+        ? JSON.parse(req.body)
+        : req.body;
 
     const method = payload?.method;
     const mint = payload?.params?.[0];
@@ -176,7 +198,9 @@ export default async function handler(req, res) {
 
       const result = await getAuraRanking(
         mint,
-        payload?.params?.[1] || { commitment: "confirmed" }
+        payload?.params?.[1] || {
+          commitment: "confirmed"
+        }
       );
 
       return res.status(200).json({
@@ -186,7 +210,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Normal RPC proxy for supply and wallet lookups.
     const data = await firstSuccessful(payload);
 
     return res.status(200).json(data);
