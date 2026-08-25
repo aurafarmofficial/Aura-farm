@@ -125,12 +125,12 @@ async function checkWallet(){
   document.getElementById("rAmount").textContent=fmt(p.amount);
   document.getElementById("rPct").textContent=Number(p.pct||0).toFixed(4)+"%";
   document.getElementById("rWallet").textContent=short(w);
-  document.getElementById("rDays").textContent=(p.days||0)+"d";
-  document.getElementById("rBought").textContent=fmt(p.bought);
-  document.getElementById("rSold").textContent=fmt(p.sold);
-  document.getElementById("rAura").textContent=fmtInt(p.aura);
+  document.getElementById("rDays").textContent=p.days===null?"—":(p.days||0)+"d";
+  document.getElementById("rBought").textContent=p.bought==null?"—":fmt(p.bought);
+  document.getElementById("rSold").textContent=p.sold==null?"—":fmt(p.sold);
+  document.getElementById("rAura").textContent=p.aura==null?"—":fmtInt(p.aura);
   document.getElementById("result").classList.add("show");
-  setStatus("History reconstructed from Solana/Helius.");
+  setStatus(p.activityStatus==="unavailable"?(p.historyError||"Balance checked, but historical data is unavailable."):"Balance checked. Historical activity loaded when available.", p.activityStatus==="unavailable");
  }catch(e){console.error(e);setStatus("Couldn't check this wallet: "+e.message,true)}
 }
 async function connectPhantom(){if(!window.solana||!window.solana.isPhantom){setStatus("Open this page in a browser with Phantom installed.",true);return}try{const r=await window.solana.connect();document.getElementById("wallet").value=r.publicKey.toString();await checkWallet()}catch(e){setStatus("Phantom connection cancelled.",true)}}
