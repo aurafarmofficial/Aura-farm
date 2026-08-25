@@ -23,13 +23,13 @@ section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-betw
 </style>
 </head>
 <body>
-<nav><div class="wrap nav"><a class="brand" href="#"><span class="brandmark">🌱</span><span>AURA FARM</span></a><div class="navlinks"><a href="#ranking">Ranking</a><a href="#check">Check Aura</a><a href="#share">Share</a><a href="https://x.com/aurafarmcrypto" target="_blank" rel="noopener">X ↗</a></div></div></nav>
+<nav><div class="wrap nav"><a class="brand" href="#"><span class="brandmark">🌱</span><span>AURA FARM</span></a><div class="navlinks"><a href="#ranking">Ranking</a><a href="#check">Check Aura</a><a href="#share">Share</a><a href="https://x.com/aurafarmcrypto" target="_blank">X ↗</a></div></div></nav>
 
 <header class="hero wrap">
 <div class="eyebrow">🌱 LIVE ON SOLANA · $AURA</div>
 <h1>FARM <span>AURA.</span></h1>
 <p>Stop farming crops. Start farming aura. Hold $AURA, climb the leaderboard and prove who actually has the aura.</p>
-<div class="actions"><a class="btn primary" href="#ranking">🏆 View Ranking</a><a class="btn" href="#check">⚡ Check My Aura</a><a class="btn" href="https://pump.fun/coin/8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump" target="_blank" rel="noopener">Buy $AURA ↗</a></div>
+<div class="actions"><a class="btn primary" href="#ranking">🏆 View Ranking</a><a class="btn" href="#check">⚡ Check My Aura</a><a class="btn" href="https://pump.fun/coin/8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump" target="_blank">Buy $AURA ↗</a></div>
 <div class="contract">Contract <code id="mint">8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump</code><button class="btn" style="padding:8px 10px" onclick="copyMint()">Copy</button></div>
 </header>
 
@@ -59,29 +59,39 @@ section{padding:25px 0 10px}.sectionhead{display:flex;justify-content:space-betw
 <div class="sharebox"><div class="mini">AURA FARM</div><h3>WHO HAS AURA?</h3><p>Check your wallet. Claim your rank. Farm harder.</p><button class="btn primary" onclick="document.getElementById('check').scrollIntoView({behavior:'smooth'})">Check my rank →</button></div></div></section>
 </main>
 
-<footer class="footer wrap">AURA FARM · $AURA · Built for the community · <a href="https://x.com/aurafarmcrypto" target="_blank" rel="noopener">@AuraFarmCrypto</a><br><br>Nothing on this site is financial advice. Do your own research.</footer>
+<footer class="footer wrap">AURA FARM · $AURA · Built for the community · <a href="https://x.com/aurafarmcrypto" target="_blank">@AuraFarmCrypto</a><br><br>Nothing on this site is financial advice. Do your own research.</footer>
 
 <script>
 const MINT="8nd8CarQtxpN6UBmpBoc6hzHExnzMDm7d7HJSbFKpump";
-const RPC_URL="/api/rpc";
-let ranking=[],supplyRaw=0,decimals=6,lastResult=null,loading=false;
+const API="/api/rpc";
+let ranking=[],supplyRaw=0,decimals=6,lastResult=null;
 
-async function rpc(method,params=[]){
+async function apiCall(payload){
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),25000);
+  const timer=setTimeout(()=>controller.abort(),15000);
   try{
-    const r=await fetch(RPC_URL,{
+    const r=await fetch(API,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method,params}),
-      signal:controller.signal,
-      cache:"no-store"
+      body:JSON.stringify(payload),
+      cache:"no-store",
+      signal:controller.signal
     });
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(j.message||j.error||("HTTP "+r.status));
-    if(j.error)throw new Error(j.error.message||"RPC error");
-    return j.result;
+    const text=await r.text();
+    let j;
+    try{j=JSON.parse(text)}catch{throw new Error("API returned invalid JSON (HTTP "+r.status+")")}
+    if(!r.ok){
+      const msg=j?.message||j?.error||("HTTP "+r.status);
+      throw new Error(msg);
+    }
+    if(j?.error)throw new Error(j.error.message||"RPC error");
+    return j;
   }finally{clearTimeout(timer)}
+}
+
+async function rpc(method,params=[]){
+  const j=await apiCall({jsonrpc:"2.0",id:Date.now(),method,params});
+  return j.result;
 }
 
 function fmt(n){return Number(n).toLocaleString("en-US",{maximumFractionDigits:2})}
@@ -89,105 +99,71 @@ function short(a){return a?a.slice(0,5)+"…"+a.slice(-5):"Unknown"}
 function setStatus(t,err=false){const e=document.getElementById("status");e.textContent=t;e.style.color=err?"#ff9a9a":"#9eb39e"}
 
 async function loadRanking(){
-  if(loading)return;
-  loading=true;
   const refresh=document.getElementById("refreshText");
   refresh.textContent="Loading live Solana holders…";
   try{
-    // Supply is requested separately so a ranking failure never blanks the supply.
-    try{
-      const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
-      if(sup?.value){
-        supplyRaw=Number(sup.value.amount);
-        decimals=Number(sup.value.decimals);
-        document.getElementById("supply").textContent=
-          sup.value.uiAmountString ?? fmt(supplyRaw/10**decimals);
-      }
-    }catch(supplyError){
-      console.error("Supply RPC failed:",supplyError);
-    }
+    const sup=await rpc("getTokenSupply",[MINT,{commitment:"confirmed"}]);
+    supplyRaw=Number(sup.value.amount);
+    decimals=Number(sup.value.decimals);
+    document.getElementById("supply").textContent=fmt(Number(sup.value.uiAmount||supplyRaw/10**decimals));
 
-    const data=await rpc("getAuraRanking",[MINT,{commitment:"confirmed"}]);
-    decimals=Number(data.decimals);
-    supplyRaw=Number(data.supply.amount);
-    document.getElementById("supply").textContent=
-      data.supply.uiAmountString || fmt(supplyRaw/10**decimals);
+    const data=await apiCall({
+      jsonrpc:"2.0",id:Date.now(),
+      method:"getAuraRanking",
+      params:[MINT,{commitment:"confirmed"}]
+    });
 
-    ranking=Array.isArray(data.holders)?data.holders.map(x=>({
+    const vals=data?.result?.holders||[];
+    if(!vals.length)throw new Error("RPC returned zero token holders");
+
+    ranking=vals.map(x=>({
       account:x.account||"",
       owner:x.owner,
       raw:Number(x.raw),
       ui:Number(x.ui)
-    })).filter(x=>x.owner&&x.raw>0):[];
+    })).filter(x=>x.owner&&x.raw>0).sort((a,b)=>b.raw-a.raw);
 
-    document.getElementById("holders").textContent=String(data.totalHolders||ranking.length);
-    document.getElementById("updated").textContent=
-      new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-
+    document.getElementById("holders").textContent=ranking.length;
+    document.getElementById("updated").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
     renderRanking();
     refresh.textContent="Updated just now";
   }catch(e){
-    console.error("Ranking load failed:",e);
-
-    // Keep any successfully loaded supply visible.
-    if(ranking.length){
-      renderRanking();
-    }else{
-      document.getElementById("rankingRows").innerHTML=
-        '<div class="row"><div>!</div><div>Ranking temporarily unavailable. Retrying automatically…</div><div></div><div></div></div>';
-    }
-
-    const diagnostic = String(e?.message || e || "Unknown error");
-    const safe = diagnostic.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    document.getElementById("rankingRows").innerHTML =
-      '<div class="row"><div>!</div><div><strong>Ranking diagnostic:</strong><br><pre style="white-space:pre-wrap;font-size:11px;color:#ffb0b0;margin:8px 0 0">'+safe+'</pre></div><div></div><div></div></div>';
-    refresh.textContent="Error diagnostic";
-  }finally{
-    loading=false;
+    console.error(e);
+    document.getElementById("rankingRows").innerHTML='<div class="row"><div>!</div><div><b>Ranking unavailable.</b><br><span style="color:#ff9a9a">'+escapeHtml(e.message)+'</span></div><div></div><div></div></div>';
+    refresh.textContent="Retrying…";
+    setTimeout(loadRanking,12000);
   }
 }
 
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
 function renderRanking(){
   const el=document.getElementById("rankingRows");
-  if(!ranking.length){
-    el.innerHTML='<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div></div>';
-    return;
-  }
+  if(!ranking.length){el.innerHTML='<div class="row"><div>—</div><div>No holders found.</div><div></div><div></div></div>';return}
   el.innerHTML=ranking.slice(0,20).map((x,i)=>`<div class="row"><div class="rank">${i<3?["🥇","🥈","🥉"][i]:i+1}</div><div class="holder">${short(x.owner)}</div><div class="amount">${fmt(x.ui)}</div><div class="pct">${supplyRaw?(x.raw/supplyRaw*100).toFixed(2):"0.00"}%</div></div>`).join("");
 }
 
 async function checkWallet(){
   const w=document.getElementById("wallet").value.trim();
   if(!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w)){setStatus("That doesn't look like a valid Solana address.",true);return}
-  setStatus("Checking the live balance…");
+  setStatus("Checking the live ranking…");
   try{
     if(!ranking.length)await loadRanking();
-
-    let direct=ranking.find(x=>x.owner===w);
-    let amount=direct?direct.ui:0;
-    let rank=direct?ranking.indexOf(direct)+1:null;
-
+    let direct=ranking.find(x=>x.owner===w),amount=direct?direct.ui:0,rank=direct?ranking.indexOf(direct)+1:null;
     if(!direct){
       const accounts=await rpc("getTokenAccountsByOwner",[w,{mint:MINT},{encoding:"jsonParsed",commitment:"confirmed"}]);
-      amount=(accounts.value||[]).reduce((s,a)=>s+Number(a.account?.data?.parsed?.info?.tokenAmount?.uiAmountString||0),0);
-      if(amount>0 && ranking.length){
-        const higher=ranking.filter(x=>x.ui>amount).length;
-        rank=higher<20?higher+1:null;
-      }
+      amount=(accounts.value||[]).reduce((s,a)=>s+Number(a.account.data.parsed.info.tokenAmount.uiAmount||0),0);
+      rank=amount>0?ranking.filter(x=>x.ui>amount).length+1:null;
     }
-
     const pct=supplyRaw?(amount/(supplyRaw/10**decimals)*100):0;
     lastResult={wallet:w,amount,rank,pct};
-    document.getElementById("rank").textContent=rank?"#"+rank:(amount>0?"HOLDER":"UNRANKED");
+    document.getElementById("rank").textContent=rank?"#"+rank:"UNRANKED";
     document.getElementById("rAmount").textContent=fmt(amount);
     document.getElementById("rPct").textContent=pct.toFixed(4)+"%";
     document.getElementById("rWallet").textContent=short(w);
     document.getElementById("result").classList.add("show");
-    setStatus(rank?"Live balance and ranking checked on Solana.":"Live balance checked. Rank is outside the displayed top 20.");
-  }catch(e){
-    console.error(e);
-    setStatus("Couldn't check this wallet right now. Try again.",true);
-  }
+    setStatus("Live balance checked on Solana.");
+  }catch(e){console.error(e);setStatus("Couldn't check this wallet: "+e.message,true)}
 }
 
 async function connectPhantom(){
@@ -195,31 +171,10 @@ async function connectPhantom(){
   try{const r=await window.solana.connect();document.getElementById("wallet").value=r.publicKey.toString();await checkWallet()}
   catch(e){setStatus("Phantom connection cancelled.",true)}
 }
-
-async function copyMint(){
-  try{await navigator.clipboard.writeText(MINT);setStatus("Contract copied.")}
-  catch(e){setStatus("Copy failed. Long-press the contract address to copy it.",true)}
-}
-
-function shareCard(){
-  if(!lastResult)return;
-  const text=lastResult.rank?`I have AURA. 🏆 #${lastResult.rank}\n\n${fmt(lastResult.amount)} $AURA\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`:`I’m holding ${fmt(lastResult.amount)} $AURA. 🌱\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`;
-  window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text),"_blank","noopener")
-}
-
-function downloadCard(){
-  if(!lastResult)return;
-  const c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=1200;c.height=675;
-  ctx.fillStyle="#061009";ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle="#7cff4f";ctx.font="900 72px Arial";ctx.fillText("AURA FARM",70,110);
-  ctx.fillStyle="#f4ffe9";ctx.font="900 110px Arial";ctx.fillText(lastResult.rank?"#"+lastResult.rank:"UNRANKED",70,280);
-  ctx.font="700 42px Arial";ctx.fillText(fmt(lastResult.amount)+" $AURA",70,360);
-  ctx.fillStyle="#9eb39e";ctx.font="28px Arial";ctx.fillText("Who actually has aura?",70,440);ctx.fillText("aura-farm-one.vercel.app",70,500);
-  const a=document.createElement("a");a.download="aura-farmer-card.png";a.href=c.toDataURL("image/png");a.click()
-}
-
-loadRanking();
-setInterval(loadRanking,60000);
+function copyMint(){navigator.clipboard.writeText(MINT);setStatus("Contract copied.")}
+function shareCard(){if(!lastResult)return;const text=lastResult.rank?`I have AURA. 🏆 #${lastResult.rank}\n\n${fmt(lastResult.amount)} $AURA\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`:`I’m holding ${fmt(lastResult.amount)} $AURA. 🌱\n\nCheck your aura: https://aura-farm-one.vercel.app/\n\n$AURA`;window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text),"_blank")}
+function downloadCard(){if(!lastResult)return;const c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=1200;c.height=675;ctx.fillStyle="#061009";ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle="#7cff4f";ctx.font="900 72px Arial";ctx.fillText("AURA FARM",70,110);ctx.fillStyle="#f4ffe9";ctx.font="900 110px Arial";ctx.fillText(lastResult.rank?"#"+lastResult.rank:"UNRANKED",70,280);ctx.font="700 42px Arial";ctx.fillText(fmt(lastResult.amount)+" $AURA",70,360);ctx.fillStyle="#9eb39e";ctx.font="28px Arial";ctx.fillText("Who actually has aura?",70,440);ctx.fillText("aura-farm-one.vercel.app",70,500);const a=document.createElement("a");a.download="aura-farmer-card.png";a.href=c.toDataURL("image/png");a.click()}
+loadRanking();setInterval(loadRanking,60000);
 </script>
 </body>
 </html>
