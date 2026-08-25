@@ -1,13 +1,12 @@
 const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-const TOKEN_2022_PROGRAM_ID = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCX8wZxV5"; // Token-2022
 const ENDPOINTS = [
   "https://solana-rpc.publicnode.com",
   "https://api.mainnet-beta.solana.com",
   "https://solana.drpc.org"
 ];
 
-const MAX_TIMEOUT = 20000;
-const MAX_HOLDERS_RETURNED = 100;
+const MAX_TIMEOUT = 12000;
+const MAX_HOLDERS_RETURNED = 20;
 
 function jsonRpc(method, params, id = 1) {
   return { jsonrpc: "2.0", id, method, params };
@@ -63,22 +62,6 @@ async function withFallback(buildPayload) {
   throw lastError || new Error("All Solana RPC endpoints failed");
 }
 
-function readTokenAccount(account) {
-  const info = account?.data?.parsed?.info;
-  const owner = info?.owner;
-  const amount = info?.tokenAmount?.amount;
-
-  if (!owner || typeof amount !== "string") return null;
-
-  try {
-    const raw = BigInt(amount);
-    if (raw <= 0n) return null;
-    return { owner, raw };
-  } catch {
-    return null;
-  }
-}
-
 async function getAuraRanking(mint, commitment = "confirmed") {
   const supplyResponse = await withFallback(() =>
     jsonRpc("getTokenSupply", [mint, { commitment }], 1)
@@ -91,60 +74,52 @@ async function getAuraRanking(mint, commitment = "confirmed") {
 
   const decimals = Number(supply.decimals);
 
-  // Token accounts store the mint pubkey at byte offset 0.
-  // Standard SPL Token accounts are 165 bytes. Token-2022 accounts can
-  // have extensions, so the Token-2022 query intentionally omits dataSize.
-  const queries = [
-    {
-      programId: TOKEN_PROGRAM_ID,
-      filters: [
-        { dataSize: 165 },
-        { memcmp: { offset: 0, bytes: mint } }
-      ]
-    },
-    {
-      programId: TOKEN_2022_PROGRAM_ID,
-      filters: [
-        { memcmp: { offset: 0, bytes: mint } }
-      ]
-    }
-  ];
-
+  // Usar getTokenLargestAccounts evita sobrecargar el nodo con getProgramAccounts
   let lastError = null;
 
   for (const endpoint of ENDPOINTS) {
     try {
-      const byOwner = new Map();
-      let tokenAccountCount = 0;
+      const largestResponse = await rpcCall(
+        endpoint,
+        jsonRpc("getTokenLargestAccounts", [mint, { commitment }], 2)
+      );
 
-      for (const query of queries) {
-        const response = await rpcCall(
-          endpoint,
-          jsonRpc(
-            "getProgramAccounts",
-            [
-              query.programId,
-              {
-                encoding: "jsonParsed",
-                commitment,
-                filters: query.filters
-              }
-            ],
-            2
-          )
-        );
-
-        const accounts = Array.isArray(response?.result) ? response.result : [];
-        tokenAccountCount += accounts.length;
-
-        for (const item of accounts) {
-          const parsed = readTokenAccount(item.account);
-          if (!parsed) continue;
-
-          const current = byOwner.get(parsed.owner) || 0n;
-          byOwner.set(parsed.owner, current + parsed.raw);
-        }
+      const accounts = largestResponse?.result?.value || [];
+      if (!accounts.length) {
+        throw new Error("No token accounts returned");
       }
+
+      const addresses = accounts.map((x) => x.address);
+      const multipleResponse = await rpcCall(
+        endpoint,
+        jsonRpc(
+          "getMultipleAccounts",
+          [
+            addresses,
+            {
+              encoding: "jsonParsed",
+              commitment
+            }
+          ],
+          3
+        )
+      );
+
+      const infos = multipleResponse?.result?.value || [];
+      const byOwner = new Map();
+
+      accounts.forEach((acc, i) => {
+        try {
+          const info = infos[i]?.data?.parsed?.info;
+          const owner = info?.owner;
+          const raw = BigInt(acc.amount);
+
+          if (owner && raw > 0n) {
+            const current = byOwner.get(owner) || 0n;
+            byOwner.set(owner, current + raw);
+          }
+        } catch {}
+      });
 
       const holders = [...byOwner.entries()]
         .map(([owner, raw]) => ({
@@ -172,7 +147,7 @@ async function getAuraRanking(mint, commitment = "confirmed") {
           uiAmountString: String(supply.uiAmountString ?? "")
         },
         totalHolders: byOwner.size,
-        tokenAccountCount,
+        tokenAccountCount: accounts.length,
         holders
       };
     } catch (error) {
@@ -213,7 +188,6 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-    // All ordinary Solana RPC methods are simply proxied.
     if (!method || typeof method !== "string") {
       return res.status(400).json({
         error: "Missing RPC method",
