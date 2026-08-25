@@ -1,18 +1,17 @@
-const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const ENDPOINTS = [
   "https://solana-rpc.publicnode.com",
   "https://api.mainnet-beta.solana.com",
-  "https://solana.drpc.org"
+  "https://solana.drpc.org",
+  "https://endpoints.omniatech.io/v1/sol/mainnet/public"
 ];
 
-const MAX_TIMEOUT = 12000;
-const MAX_HOLDERS_RETURNED = 20;
+const MAX_TIMEOUT = 15000;
 
-function jsonRpc(method, params, id = 1) {
+function rpcPayload(method, params, id = 1) {
   return { jsonrpc: "2.0", id, method, params };
 }
 
-async function rpcCall(endpoint, payload) {
+async function callRpc(endpoint, payload) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), MAX_TIMEOUT);
 
@@ -48,12 +47,12 @@ async function rpcCall(endpoint, payload) {
   }
 }
 
-async function withFallback(buildPayload) {
+async function callWithFallback(method, params, id = 1) {
   let lastError = null;
 
   for (const endpoint of ENDPOINTS) {
     try {
-      return await rpcCall(endpoint, buildPayload());
+      return await callRpc(endpoint, rpcPayload(method, params, id));
     } catch (error) {
       lastError = error;
     }
@@ -62,116 +61,140 @@ async function withFallback(buildPayload) {
   throw lastError || new Error("All Solana RPC endpoints failed");
 }
 
-async function getAuraRanking(mint, commitment = "confirmed") {
-  const supplyResponse = await withFallback(() =>
-    jsonRpc("getTokenSupply", [mint, { commitment }], 1)
+function toUiAmount(raw, decimals) {
+  return Number(raw) / Math.pow(10, decimals);
+}
+
+async function buildRanking(mint, commitment) {
+  // IMPORTANT:
+  // We deliberately use getTokenLargestAccounts here first.
+  // It is much lighter and more reliable on public Solana RPCs than
+  // scanning every token account with getProgramAccounts.
+  const supplyResponse = await callWithFallback(
+    "getTokenSupply",
+    [mint, { commitment }],
+    1
   );
 
   const supply = supplyResponse?.result?.value;
+
   if (!supply?.amount || typeof supply.decimals !== "number") {
     throw new Error("Could not read token supply");
   }
 
   const decimals = Number(supply.decimals);
 
-  // Usar getTokenLargestAccounts evita sobrecargar el nodo con getProgramAccounts
-  let lastError = null;
+  const largestResponse = await callWithFallback(
+    "getTokenLargestAccounts",
+    [mint, { commitment }],
+    2
+  );
 
-  for (const endpoint of ENDPOINTS) {
-    try {
-      const largestResponse = await rpcCall(
-        endpoint,
-        jsonRpc("getTokenLargestAccounts", [mint, { commitment }], 2)
-      );
+  const tokenAccounts = largestResponse?.result?.value || [];
 
-      const accounts = largestResponse?.result?.value || [];
-      if (!accounts.length) {
-        throw new Error("No token accounts returned");
-      }
-
-      const addresses = accounts.map((x) => x.address);
-      const multipleResponse = await rpcCall(
-        endpoint,
-        jsonRpc(
-          "getMultipleAccounts",
-          [
-            addresses,
-            {
-              encoding: "jsonParsed",
-              commitment
-            }
-          ],
-          3
-        )
-      );
-
-      const infos = multipleResponse?.result?.value || [];
-      const byOwner = new Map();
-
-      accounts.forEach((acc, i) => {
-        try {
-          const info = infos[i]?.data?.parsed?.info;
-          const owner = info?.owner;
-          const raw = BigInt(acc.amount);
-
-          if (owner && raw > 0n) {
-            const current = byOwner.get(owner) || 0n;
-            byOwner.set(owner, current + raw);
-          }
-        } catch {}
-      });
-
-      const holders = [...byOwner.entries()]
-        .map(([owner, raw]) => ({
-          account: "",
-          owner,
-          raw: raw.toString(),
-          ui: Number(raw) / 10 ** decimals
-        }))
-        .filter((x) => Number.isFinite(x.ui) && x.ui > 0)
-        .sort((a, b) => {
-          const ar = BigInt(a.raw);
-          const br = BigInt(b.raw);
-          return br > ar ? 1 : br < ar ? -1 : 0;
-        })
-        .slice(0, MAX_HOLDERS_RETURNED);
-
-      return {
-        ok: true,
-        method: "getAuraRanking",
-        mint,
-        decimals,
-        supply: {
-          amount: String(supply.amount),
-          decimals,
-          uiAmountString: String(supply.uiAmountString ?? "")
-        },
-        totalHolders: byOwner.size,
-        tokenAccountCount: accounts.length,
-        holders
-      };
-    } catch (error) {
-      lastError = error;
-    }
+  if (!Array.isArray(tokenAccounts) || tokenAccounts.length === 0) {
+    throw new Error("No token accounts returned");
   }
 
-  throw lastError || new Error("All Solana RPC endpoints failed");
+  const addresses = tokenAccounts
+    .map((x) => x?.address)
+    .filter(Boolean);
+
+  const multipleResponse = await callWithFallback(
+    "getMultipleAccounts",
+    [
+      addresses,
+      {
+        encoding: "jsonParsed",
+        commitment
+      }
+    ],
+    3
+  );
+
+  const infos = multipleResponse?.result?.value || [];
+  const byOwner = new Map();
+
+  tokenAccounts.forEach((account, index) => {
+    try {
+      const owner =
+        infos[index]?.data?.parsed?.info?.owner;
+
+      const rawString = account?.amount;
+
+      if (!owner || typeof rawString !== "string") return;
+
+      const raw = BigInt(rawString);
+      if (raw <= 0n) return;
+
+      const old = byOwner.get(owner) || 0n;
+      byOwner.set(owner, old + raw);
+    } catch {
+      // Ignore malformed token accounts.
+    }
+  });
+
+  const holders = [...byOwner.entries()]
+    .map(([owner, raw]) => ({
+      account: "",
+      owner,
+      raw: raw.toString(),
+      ui: toUiAmount(raw.toString(), decimals)
+    }))
+    .filter((x) => Number.isFinite(x.ui) && x.ui > 0)
+    .sort((a, b) => {
+      const ar = BigInt(a.raw);
+      const br = BigInt(b.raw);
+      if (br > ar) return 1;
+      if (br < ar) return -1;
+      return 0;
+    });
+
+  return {
+    ok: true,
+    method: "getAuraRanking",
+    mint,
+    decimals,
+    supply: {
+      amount: String(supply.amount),
+      decimals,
+      uiAmountString: String(supply.uiAmountString ?? "")
+    },
+    // This is the number of wallets represented in the top-20
+    // token-account snapshot, not the total number of holders.
+    totalHolders: holders.length,
+    tokenAccountsChecked: tokenAccounts.length,
+    holders: holders.slice(0, 20)
+  };
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      error: "Method not allowed"
+    });
   }
 
   try {
     const payload =
-      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+      typeof req.body === "string"
+        ? JSON.parse(req.body)
+        : req.body;
 
     const method = payload?.method;
-    const params = Array.isArray(payload?.params) ? payload.params : [];
-    const mint = params[0];
+    const params = Array.isArray(payload?.params)
+      ? payload.params
+      : [];
+
+    if (!method || typeof method !== "string") {
+      return res.status(400).json({
+        error: "Missing RPC method"
+      });
+    }
 
     if (method === "getAuraRanking") {
+      const mint = params[0];
+
       if (!mint || typeof mint !== "string") {
         return res.status(400).json({
           error: "Missing mint",
@@ -184,25 +207,29 @@ export default async function handler(req, res) {
           ? params[1].commitment
           : "confirmed";
 
-      const result = await getAuraRanking(mint, commitment);
-      return res.status(200).json(result);
+      try {
+        const result = await buildRanking(mint, commitment);
+        return res.status(200).json(result);
+      } catch (error) {
+        console.error("getAuraRanking failed:", error);
+
+        return res.status(502).json({
+          error: "Ranking unavailable",
+          message: error?.message || "Could not load Solana ranking"
+        });
+      }
     }
 
-    if (!method || typeof method !== "string") {
-      return res.status(400).json({
-        error: "Missing RPC method",
-        message: "A JSON-RPC method is required."
-      });
-    }
-
+    // Normal RPC proxy for the wallet check and token supply calls.
     let lastError = null;
 
     for (const endpoint of ENDPOINTS) {
       try {
-        const result = await rpcCall(
+        const result = await callRpc(
           endpoint,
-          jsonRpc(method, params, payload.id ?? 1)
+          rpcPayload(method, params, payload.id ?? 1)
         );
+
         return res.status(200).json(result);
       } catch (error) {
         lastError = error;
